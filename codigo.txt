@@ -1,0 +1,135 @@
+#include <Adafruit_NeoPixel.h>
+#include <LiquidCrystal.h>
+
+#define PIN_NEOPIXEL 6
+#define NUM_LEDS 61
+
+#define PIN_BOTON_COLOR 3
+#define PIN_BOTON_MODO 2
+
+// Conexión paralela: LiquidCrystal(RS, E, D4, D5, D6, D7)
+LiquidCrystal lcd(12, 11, 5, 4, 10, 9);
+
+Adafruit_NeoPixel ring(NUM_LEDS, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+
+const uint32_t COLORES[] = {
+  ring.Color(255, 0, 0),
+  ring.Color(0, 255, 0),
+  ring.Color(0, 0, 255),
+  ring.Color(255, 255, 0),
+  ring.Color(0, 255, 255),
+  ring.Color(255, 0, 255),
+  ring.Color(255, 255, 255)
+};
+const int TOTAL_COLORES = sizeof(COLORES) / sizeof(COLORES[0]);
+
+int indiceColor = 0;
+int modoSecuencia = 0;
+const int TOTAL_MODOS = 4;
+
+bool ultEstadoBotonColor = HIGH;
+bool ultEstadoBotonModo = HIGH;
+bool estadoAceptadoColor = HIGH;
+bool estadoAceptadoModo = HIGH;
+unsigned long ultTiempoDebounceColor = 0;
+unsigned long ultTiempoDebounceModo = 0;
+const unsigned long DEBOUNCE_DELAY = 50;
+
+unsigned long ultActualizacionAnim = 0;
+int pasoAnimacion = 0;
+
+void setup() {
+  pinMode(PIN_BOTON_COLOR, INPUT_PULLUP);
+  pinMode(PIN_BOTON_MODO, INPUT_PULLUP);
+
+  lcd.begin(20, 4);
+  lcd.clear();
+  lcd.setCursor(2, 1);
+  lcd.print("ahora escuchando");
+
+  ring.begin();
+  ring.setBrightness(150);
+  ring.show();
+}
+
+void loop() {
+  unsigned long tiempoActual = millis();
+
+  bool lecturaColor = digitalRead(PIN_BOTON_COLOR);
+  if (lecturaColor != ultEstadoBotonColor) {
+    ultTiempoDebounceColor = tiempoActual;
+    ultEstadoBotonColor = lecturaColor;
+  }
+  if ((tiempoActual - ultTiempoDebounceColor) > DEBOUNCE_DELAY) {
+    if (lecturaColor != estadoAceptadoColor) {
+      estadoAceptadoColor = lecturaColor;
+      if (estadoAceptadoColor == LOW) {
+        indiceColor = (indiceColor + 1) % TOTAL_COLORES;
+      }
+    }
+  }
+
+  bool lecturaModo = digitalRead(PIN_BOTON_MODO);
+  if (lecturaModo != ultEstadoBotonModo) {
+    ultTiempoDebounceModo = tiempoActual;
+    ultEstadoBotonModo = lecturaModo;
+  }
+  if ((tiempoActual - ultTiempoDebounceModo) > DEBOUNCE_DELAY) {
+    if (lecturaModo != estadoAceptadoModo) {
+      estadoAceptadoModo = lecturaModo;
+      if (estadoAceptadoModo == LOW) {
+        modoSecuencia = (modoSecuencia + 1) % TOTAL_MODOS;
+        pasoAnimacion = 0;
+      }
+    }
+  }
+
+  uint32_t colorActual = COLORES[indiceColor];
+
+  switch (modoSecuencia) {
+    case 0:
+      ring.fill(colorActual, 0, NUM_LEDS);
+      ring.show();
+      break;
+
+    case 1:
+      if (tiempoActual - ultActualizacionAnim >= 40) {
+        ultActualizacionAnim = tiempoActual;
+        ring.clear();
+        for (int i = 0; i < 8; i++) {
+          int idx = (pasoAnimacion + i) % NUM_LEDS;
+          ring.setPixelColor(idx, colorActual);
+        }
+        ring.show();
+        pasoAnimacion = (pasoAnimacion + 1) % NUM_LEDS;
+      }
+      break;
+
+    case 2:
+      if (tiempoActual - ultActualizacionAnim >= 15) {
+        ultActualizacionAnim = tiempoActual;
+        
+        float factor = (sin(pasoAnimacion * 0.05) + 1.0) / 2.0; 
+        uint8_t r = ((colorActual >> 16) & 0xFF) * factor;
+        uint8_t g = ((colorActual >> 8) & 0xFF) * factor;
+        uint8_t b = (colorActual & 0xFF) * factor;
+
+        ring.fill(ring.Color(r, g, b), 0, NUM_LEDS);
+        ring.show();
+        pasoAnimacion++;
+      }
+      break;
+
+    case 3:
+      if (tiempoActual - ultActualizacionAnim >= 20) {
+        ultActualizacionAnim = tiempoActual;
+        for (int i = 0; i < NUM_LEDS; i++) {
+          int pixelHue = (pasoAnimacion * 256 + (i * 65536L / NUM_LEDS)) & 0xFFFF;
+          ring.setPixelColor(i, ring.gamma32(ring.ColorHSV(pixelHue)));
+        }
+        ring.show();
+        pasoAnimacion++;
+      }
+      break;
+  }
+}
