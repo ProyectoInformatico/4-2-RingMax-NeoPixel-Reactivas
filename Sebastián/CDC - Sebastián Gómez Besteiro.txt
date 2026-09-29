@@ -1,0 +1,14 @@
+- 1/9/2026
+Investigué sobre el DFPlayer Mini, aprendi su uso, conexión, y utilidad en el proyecto.
+
+- 8/9/2026
+Trabajé con una placa Arduino y protoboard físicamente, aprendiendo como es la conexión afuera de Tinkercad. Nos encargamos de buscar todos los componentes que usaríamos, ademas de anotarlos, y hacer una estructura boceto para poner los mismos.
+
+- 15/9/2026
+Creé el modelo 3D para la estructura, protector del NeoPixel, etc. Y le encargué al profesor la posibilidad de imprimirlo
+
+- 22/9/2026
+Investigué sobre la conexión de los nuevos componentes, y preparamos todo para iniciar y plasmarlo en la estructura
+
+- 29/9/2026
+Conecté todos los componentes de forma física, e iniciamos con el código base para entender las funciones que necesitamos de cada componente
